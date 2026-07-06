@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Equipe Qualidade — Friboi / JBS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#eef0f4;min-height:100vh}
+.hdr{background:#2E3192;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.hdr-t{color:#fff;font-size:16px;font-weight:500}
+.hdr-s{color:rgba(255,255,255,0.6);font-size:12px;margin-top:2px}
+.nav{background:#1a1f6e;display:flex;overflow-x:auto;position:sticky;top:52px;z-index:9}
+.nb{padding:10px 20px;color:rgba(255,255,255,0.55);font-size:13px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.nb.on{color:#fff;border-bottom-color:#F7941D}
+.nb:hover{color:rgba(255,255,255,0.85)}
+.body{padding:18px 24px;max-width:1200px;margin:0 auto}
+.fbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:#fff;padding:10px 14px;border-radius:10px;border:0.5px solid #ddd}
+.fbar label{font-size:12px;color:#666}
+.fbar select{padding:5px 9px;border:0.5px solid #ddd;border-radius:6px;font-size:13px;background:#fff;color:#111}
+.mref{background:#2E3192;color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;margin-left:auto}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.k{background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px}
+.kl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px}
+.kv{font-size:22px;font-weight:500;color:#111}
+.ks{font-size:11px;color:#888;margin-top:3px}
+.k.bl{background:#2E3192;border:none}.k.bl .kl{color:rgba(255,255,255,0.65)}.k.bl .kv{color:#fff}.k.bl .ks{color:rgba(255,255,255,0.6)}
+.k.db{background:#1a1f6e;border:none}.k.db .kl{color:rgba(255,255,255,0.65)}.k.db .kv{color:#fff;font-size:18px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.fg .k.db{grid-column:span 2}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.cc{background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px}
+.ct{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px}
+.ldg{text-align:center;padding:40px;color:#888;font-size:14px}
+.err{background:#fff0f0;border:0.5px solid #fcc;border-radius:8px;padding:14px;color:#c00;font-size:13px;margin:16px 0}
+.t3i{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid #eee}
+.t3i:last-child{border-bottom:none}
+.t3n{width:26px;height:26px;background:#2E3192;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+@media(max-width:600px){.cg,.fg{grid-template-columns:1fr}.fg .k.db{grid-column:span 1}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div><div class="hdr-t">Painel Equipe Qualidade</div><div class="hdr-s">Diretoria da Qualidade — Friboi / JBS</div></div>
+  <span style="color:rgba(255,255,255,0.6);font-size:11px" id="upd"></span>
+</div>
+<div class="nav">
+  <button class="nb on" onclick="pg('ato',this)">Ato de entrega</button>
+  <button class="nb" onclick="pg('rev',this)">Reversão</button>
+  <button class="nb" onclick="pg('trein',this)">Treinamentos</button>
+  <button class="nb" onclick="pg('pv',this)">Pós venda</button>
+  <button class="nb" onclick="pg('cham',this)">Chamados</button>
+</div>
+<div class="body">
+  <div class="fbar">
+    <label>Ano</label><select id="sa" onchange="fil()"></select>
+    <label>Mês</label>
+    <select id="sm" onchange="fil()">
+      <option value="0">Todos</option>
+      <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+      <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+      <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+    </select>
+    <div class="mref" id="mref">—</div>
+  </div>
+  <div id="main"><div class="ldg">Carregando dados...</div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const PROXY='https://script.google.com/macros/s/AKfycbwfjIJVMl5lhJkiexMZZGzgRDmLSU2EVK811Zsp5Eg59kgQdKnBal_lDKRnPWSs4TB9Zw/exec';
+const MN=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let D={},cur='ato',CH={};
+
+function pn(v){return parseFloat(String(v||0).replace(',','.'))||0;}
+function fm(n,d=0){if(n===null||n===undefined||isNaN(n))return'—';return n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fR(n){return'R$ '+fm(n,2);}
+function fP(n){return fm(n*100,1)+'%';}
+function gA(){return parseInt(document.getElementById('sa').value)||0;}
+function gM(){return parseInt(document.getElementById('sm').value)||0;}
+
+// Converte mês em texto (MAI, Maio, mai) ou número (5) para número 1-12
+const MESES_ABREV=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const MESES_COMPLETO=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+function monthToNum(v){
+  if(v===null||v===undefined||v==='')return 0;
+  if(typeof v==='number')return v;
+  const n=parseInt(v);
+  if(!isNaN(n)&&String(n)===String(v).trim())return n;
+  const s=String(v).trim().toUpperCase();
+  let idx=MESES_ABREV.indexOf(s);
+  if(idx>=0)return idx+1;
+  idx=MESES_COMPLETO.indexOf(s);
+  if(idx>=0)return idx+1;
+  // tenta bater pelas 3 primeiras letras (ex: "Mai." ou "Mai/2026")
+  const s3=s.slice(0,3);
+  idx=MESES_ABREV.indexOf(s3);
+  if(idx>=0)return idx+1;
+  return 0;
+}
+
+function pd(v){
+  if(!v)return null;
+  const s=String(v).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if(m)return new Date(2000+ +m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+
+function fD(rows,campo){
+  const a=gA(),m=gM();
+  return rows.filter(r=>{
+    const d=pd(r[campo]);
+    if(!d||isNaN(d.getTime()))return false;
+    if(a&&d.getFullYear()!==a)return false;
+    if(m&&(d.getMonth()+1)!==m)return false;
+    return true;
+  });
+}
+
+function fAM(rows,ca='Ano',cm='Mês'){
+  const a=gA(),m=gM();
+  return rows.filter(r=>{
+    if(a&&+r[ca]!==a)return false;
+    if(m&&monthToNum(r[cm])!==m)return false;
+    return true;
+  });
+}
+
+function mref(){
+  const a=gA(),m=gM();
+  document.getElementById('mref').textContent=a&&m?MN[m]+'/'+a:a?'Ano '+a:m?MN[m]:'Todo o período';
+}
+
+function buildAnos(){
+  const s=new Set();
+  (D.ato||[]).forEach(r=>{
+    const d=pd(r.data);
+    if(d&&!isNaN(d.getTime())&&d.getFullYear()>2000)s.add(d.getFullYear());
+  });
+  (D.reversao||[]).forEach(r=>{if(r.Ano&&+r.Ano>2000)s.add(+r.Ano);});
+  (D.treinamentos||[]).forEach(r=>{if(r.Ano&&+r.Ano>2000)s.add(+r.Ano);});
+  const arr=[...s].sort();
+  const el=document.getElementById('sa');
+  el.innerHTML='<option value="0">Todos</option>';
+  arr.forEach(a=>{
+    const o=document.createElement('option');
+    o.value=a;o.textContent=a;
+    el.appendChild(o);
+  });
+  const y=new Date().getFullYear();
+  el.value=s.has(y)?y:(arr[arr.length-1]||0);
+}
+
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
+function k(l,v,s='',c=''){return`<div class="k ${c}"><div class="kl">${l}</div><div class="kv">${v}</div>${s?`<div class="ks">${s}</div>`:''}</div>`;}
+
+function rAto(){
+  const rows=fD(D.ato||[],'data');
+  const fat=fAM(D.faturado||[],'Ano','Mês');
+  const vF=fat.reduce((s,r)=>s+pn(r['Faturamento (R$)']),0);
+  const vlF=fat.reduce((s,r)=>s+pn(r['Volume (Toneladas)']),0);
+  const n=rows.length;
+  const vlA=rows.reduce((s,r)=>s+pn(r.volTotalNF),0)/1000;
+  const vA=rows.reduce((s,r)=>s+pn(r.valorNF),0);
+  const vlD=rows.reduce((s,r)=>s+pn(r.volDevolvido),0)/1000;
+  const vlR=rows.reduce((s,r)=>s+pn(r.volRevertido),0)/1000;
+  const vlRst=rows.reduce((s,r)=>s+pn(r.volRestricaoKg),0)/1000;
+  const tec={};
+  rows.forEach(r=>{const t=r.tecnico||'—';tec[t]=(tec[t]||0)+pn(r.valorNF);});
+  const ts=Object.entries(tec).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  document.getElementById('main').innerHTML=`
+    <div class="kg">
+      ${k('Nº descargas',fm(n))}
+      ${k('Volume acompanhado',fm(vlA,2)+' ton')}
+      ${k('Valor acompanhado',fR(vA))}
+      ${k('Vol. com restrição',fm(vlRst,2)+' ton')}
+    </div>
+    <div class="fg">
+      ${k('Valor faturado atacado',fR(vF),'Faturamento bruto','bl')}
+      ${k('Valores acompanhados',fR(vA),'Do faturado','bl')}
+      ${k('Quanto acompanhamos do valor faturado?',vF>0?fP(vA/vF):'—','','db')}
+      ${k('Volume faturado atacado',fm(vlF,2)+' ton','Bruto','bl')}
+      ${k('Volume acompanhado',fm(vlA,2)+' ton','Do faturado','bl')}
+      ${k('Quanto acompanhamos do volume?',vlF>0?fP(vlA/vlF):'—','','db')}
+    </div>
+    <div class="cg">
+      <div class="cc"><div class="ct">Valor acompanhado por técnico (R$)</div>
+        <div style="position:relative;height:${Math.max(200,ts.length*38+60)}px">
+          <canvas id="ct1"></canvas>
+        </div>
+      </div>
+      <div class="cc"><div class="ct">Distribuição do volume (tons)</div>
+        <div style="position:relative;height:280px">
+          <canvas id="ct2"></canvas>
+        </div>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    dc('ct1');
+    const c1=document.getElementById('ct1');
+    if(c1&&ts.length)CH['ct1']=new Chart(c1,{type:'bar',
+      data:{labels:ts.map(([t])=>t.split(' ')[0]),
+        datasets:[{label:'R$',data:ts.map(([,v])=>Math.round(v)),backgroundColor:'#2E3192',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'R$ '+fm(c.raw,0)}}},
+        scales:{x:{ticks:{callback:v=>v>=1e6?'R$'+Math.round(v/1e6)+'M':v>=1e3?'R$'+Math.round(v/1e3)+'k':'R$'+v},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:12}}}}}});
+
+    dc('ct2');
+    const c2=document.getElementById('ct2');
+    const rec=Math.max(0,vlA-vlR-vlD);
+    if(c2)CH['ct2']=new Chart(c2,{type:'doughnut',
+      data:{labels:['Recebido conforme','Revertido','Devolvido'],
+        datasets:[{data:[+rec.toFixed(2),+vlR.toFixed(2),+vlD.toFixed(2)],
+          backgroundColor:['#2E3192','#1C75BC','#C1272D'],borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:12}},
+          tooltip:{callbacks:{label:c=>c.label+': '+fm(c.raw,2)+' ton'}}}}});
+  },100);
+}
+
+function rRev(){
+  const rows=fAM(D.reversao||[]);
+  const rst=rows.reduce((s,r)=>s+pn(r['Recebido com Restrição (Ton)']),0);
+  const rv=rows.reduce((s,r)=>s+pn(r['Revertido (Ton)']),0);
+  const dv=rows.reduce((s,r)=>s+pn(r['Devolvido (Ton)']),0);
+  const tx=(rv+dv)>0?rv/(rv+dv):0;
+  const vRv=rows.reduce((s,r)=>s+pn(r['Revertido (R$)']),0);
+  const vDv=rows.reduce((s,r)=>s+pn(r['Devolvido (R$)']),0);
+  const all=(D.reversao||[]).sort((a,b)=>(+a.Ano*12+ +a['Mês'])-(+b.Ano*12+ +b['Mês']));
+  const labs=all.map(r=>MN[+r['Mês']]+'/'+String(r.Ano).slice(2));
+  const taxas=all.map(r=>{const rv=pn(r['Revertido (Ton)']),dv=pn(r['Devolvido (Ton)']);return(rv+dv)>0?Math.round(rv/(rv+dv)*1000)/10:0;});
+
+  document.getElementById('main').innerHTML=`
+    <div class="kg">
+      ${k('Recebido c/ restrição',fm(rst,2)+' ton')}
+      ${k('Revertido',fm(rv,2)+' ton',fR(vRv))}
+      ${k('Devolvido',fm(dv,2)+' ton',fR(vDv))}
+      ${k('Taxa de reversão',fP(tx),'Revertido ÷ (Rev+Dev)')}
+    </div>
+    <div class="cc"><div class="ct">Taxa de reversão — histórico mensal (%)</div>
+      <div style="position:relative;height:260px"><canvas id="cr1"></canvas></div>
+    </div>`;
+
+  setTimeout(()=>{dc('cr1');const c=document.getElementById('cr1');
+    if(c)CH['cr1']=new Chart(c,{type:'line',
+      data:{labels:labs,datasets:[{label:'Taxa (%)',data:taxas,borderColor:'#2E3192',backgroundColor:'rgba(46,49,146,0.08)',tension:0.3,fill:true,pointRadius:4,pointBackgroundColor:'#2E3192'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},
+        scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}},
+          x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11}}}}}});
+  },100);
+}
+
+function rTrein(){
+  const rows=fAM(D.treinamentos||[]);
+  const tot=rows.reduce((s,r)=>s+pn(r['Treinamentos Realizados']),0);
+  const pess=rows.reduce((s,r)=>s+pn(r['Pessoas Treinadas']),0);
+  const all=(D.treinamentos||[]).sort((a,b)=>(+a.Ano*12+ +a['Mês'])-(+b.Ano*12+ +b['Mês']));
+  const labs=all.map(r=>MN[+r['Mês']]+'/'+String(r.Ano).slice(2));
+  const vt=all.map(r=>pn(r['Treinamentos Realizados']));
+  const vp=all.map(r=>pn(r['Pessoas Treinadas']));
+
+  document.getElementById('main').innerHTML=`
+    <div class="kg">
+      ${k('Treinamentos realizados',fm(tot))}
+      ${k('Pessoas treinadas',fm(pess))}
+      ${k('Média por treinamento',tot>0?fm(pess/tot,1)+' pessoas':'—')}
+    </div>
+    <div class="cc"><div class="ct">Histórico — treinamentos e pessoas por mês</div>
+      <div style="position:relative;height:260px"><canvas id="ctr1"></canvas></div>
+    </div>`;
+
+  setTimeout(()=>{dc('ctr1');const c=document.getElementById('ctr1');
+    if(c)CH['ctr1']=new Chart(c,{type:'bar',
+      data:{labels:labs,datasets:[
+        {label:'Treinamentos',data:vt,backgroundColor:'#2E3192',borderRadius:4,yAxisID:'y'},
+        {label:'Pessoas',data:vp,type:'line',borderColor:'#1C75BC',backgroundColor:'rgba(28,117,188,0.08)',tension:0.3,fill:true,pointRadius:3,yAxisID:'y1'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:12,usePointStyle:true}}},
+        scales:{y:{grid:{color:'rgba(0,0,0,0.05)'}},y1:{position:'right',grid:{display:false}},
+          x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11}}}}}});
+  },100);
+}
+
+function rPV(){
+  const pvRows=D.posvenda||[];
+  const pvKeys=Object.keys(pvRows[0]||{});
+  const cd=pvKeys.find(k=>k.toUpperCase().includes('DATA')&&k.toUpperCase().includes('RECLAMA'))||pvKeys.find(k=>k.toUpperCase().includes('DATA'))||'';
+  const rows=cd?fD(pvRows,cd):pvRows;
+  const proc=rows.filter(r=>String(r['PARECER FINAL']||'').toUpperCase()==='PROCEDENTE');
+  const imp=rows.filter(r=>String(r['PARECER FINAL']||'').toUpperCase()==='IMPROCEDENTE');
+  const vp=proc.reduce((s,r)=>s+pn(r['VALOR DA RECLAMAÇÃO (R$)']),0);
+  const vi=imp.reduce((s,r)=>s+pn(r['VALOR DA RECLAMAÇÃO (R$)']),0);
+  const t3=D.top3||[];
+
+  document.getElementById('main').innerHTML=`
+    <div class="kg">
+      ${k('Total de reclamações',fm(rows.length))}
+      ${k('Procedentes',fm(proc.length),fR(vp))}
+      ${k('Improcedentes',fm(imp.length),fR(vi))}
+      ${k('% procedente',rows.length>0?fP(proc.length/rows.length):'—')}
+    </div>
+    <div class="cc"><div class="ct">Top 3 fábricas — reclamações procedentes (R$)</div>
+      ${t3.length?t3.map(r=>`<div class="t3i">
+        <div class="t3n">${r['Posição']||'?'}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;color:#111">${r['Fábrica (EMPRESA DESOSSA)']||'—'}</div>
+          <div style="font-size:11px;color:#888">${r['Nº Reclamações (Procedentes)']||0} reclamações</div>
+        </div>
+        <div style="font-size:14px;font-weight:500;color:#2E3192">${fR(pn(r['Valor Total Reclamação (R$)']))}</div>
+      </div>`).join(''):'<div class="ldg">Sem dados no Top 3</div>'}
+    </div>`;
+}
+
+function rCham(){
+  const rows=D.chamados||[];
+  const ks=Object.keys(rows[0]||{});
+  const cd=ks.find(k=>k.toLowerCase().includes('data')&&k.toLowerCase().includes('aber'))||ks.find(k=>k.toLowerCase().includes('data'))||'';
+  const fil=cd?fD(rows,cd):rows;
+  const ct=ks.find(k=>['tipo','type','categoria','assunto'].includes(k.toLowerCase()))||ks[2]||'';
+  const tipos={};
+  fil.forEach(r=>{const t=r[ct]||'Outros';tipos[t]=(tipos[t]||0)+1;});
+  const ts=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const CORES=['#2a78d6','#1baf7a','#eda100','#2E3192','#4a3aa7','#e34948','#e87ba4','#eb6834'];
+
+  document.getElementById('main').innerHTML=`
+    <div class="kg">
+      ${k('Total de chamados',fm(fil.length))}
+      ${k('Tipos distintos',fm(Object.keys(tipos).length))}
+    </div>
+    <div class="cc"><div class="ct">Chamados por tipo</div>
+      <div style="position:relative;height:${Math.max(200,ts.length*38+70)}px">
+        <canvas id="cc1"></canvas>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{dc('cc1');const c=document.getElementById('cc1');
+    if(c&&ts.length)CH['cc1']=new Chart(c,{type:'bar',
+      data:{labels:ts.map(([t])=>t.length>25?t.slice(0,23)+'…':t),
+        datasets:[{label:'Qtd',data:ts.map(([,v])=>v),backgroundColor:ts.map((_,i)=>CORES[i%CORES.length]),borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:12}}}}}});
+  },100);
+}
+
+function fil(){mref();ren();}
+function ren(){
+  if(cur==='ato')rAto();
+  else if(cur==='rev')rRev();
+  else if(cur==='trein')rTrein();
+  else if(cur==='pv')rPV();
+  else if(cur==='cham')rCham();
+}
+function pg(p,btn){
+  cur=p;
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ren();
+}
+
+async function init(){
+  try{
+    // Busca cada aba separadamente para evitar timeout no proxy
+    const [rAto,rFat,rRev,rTrein,rT3,rPV,rCham]=await Promise.all([
+      fetch(PROXY+'?aba=ato').then(r=>r.json()),
+      fetch(PROXY+'?aba=faturado').then(r=>r.json()),
+      fetch(PROXY+'?aba=reversao').then(r=>r.json()),
+      fetch(PROXY+'?aba=treinamentos').then(r=>r.json()),
+      fetch(PROXY+'?aba=top3').then(r=>r.json()),
+      fetch(PROXY+'?aba=posvenda').then(r=>r.json()),
+      fetch(PROXY+'?aba=chamados').then(r=>r.json()),
+    ]);
+
+    D={ato:rAto,faturado:rFat,reversao:rRev,treinamentos:rTrein,top3:rT3,posvenda:rPV,chamados:rCham};
+
+    // Diagnóstico no console
+    console.log('Dados carregados:');
+    Object.entries(D).forEach(([k,v])=>console.log(k,Array.isArray(v)?v.length+' linhas':v));
+
+    // Amostra de datas para debug
+    if(D.ato&&D.ato[0])console.log('Amostra data ato:',D.ato[0].data,'→ parse:',pd(D.ato[0].data));
+    if(D.chamados&&D.chamados[0]){
+      const chKeys=Object.keys(D.chamados[0]);
+      const chCampo=chKeys.find(k=>k.toLowerCase().includes('data')&&k.toLowerCase().includes('aber'))||chKeys.find(k=>k.toLowerCase().includes('data'));
+      console.log('Campo data Chamados:',chCampo,'| valor:',D.chamados[0][chCampo],'| parse:',pd(D.chamados[0][chCampo]));
+    }
+    if(D.posvenda&&D.posvenda[0]){
+      const pvKeys=Object.keys(D.posvenda[0]);
+      const pvCampo=pvKeys.find(k=>k.toUpperCase().includes('DATA')&&k.toUpperCase().includes('RECLAMA'))||pvKeys.find(k=>k.toUpperCase().includes('DATA'));
+      console.log('Campo data Pós Venda:',pvCampo,'| valor:',D.posvenda[0][pvCampo],'| parse:',pd(D.posvenda[0][pvCampo]));
+    }
+
+    buildAnos();
+    document.getElementById('sm').value=new Date().getMonth()+1;
+    mref();
+    document.getElementById('upd').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR');
+    ren();
+  }catch(e){
+    document.getElementById('main').innerHTML=`<div class="err">Erro ao carregar dados: ${e.message}<br><small>Abra o console (F12) para detalhes.</small></div>`;
+    console.error(e);
+  }
+}
+init();
+</script>
+</body>
+</html>
