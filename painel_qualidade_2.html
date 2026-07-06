@@ -40,6 +40,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#eef0f4;min-heigh
 </style>
 </head>
 <body>
+<div id="gate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#eef0f4;font-family:system-ui,-apple-system,sans-serif">
+  <div style="background:#fff;border-radius:12px;padding:32px 28px;max-width:340px;width:90%;box-shadow:0 2px 12px rgba(0,0,0,0.08);text-align:center">
+    <div style="font-size:16px;font-weight:600;color:#2E3192;margin-bottom:4px">Painel Equipe Qualidade</div>
+    <div style="font-size:12px;color:#888;margin-bottom:20px">Diretoria da Qualidade — Friboi / JBS</div>
+    <input type="password" id="pw" placeholder="Digite a senha" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box" onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()" style="width:100%;padding:10px;background:#2E3192;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer">Entrar</button>
+    <div id="pw-err" style="color:#c00;font-size:12px;margin-top:10px;display:none">Senha incorreta. Tente novamente.</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+
 <div class="hdr">
   <div><div class="hdr-t">Painel Equipe Qualidade</div><div class="hdr-s">Diretoria da Qualidade — Friboi / JBS</div></div>
   <span style="color:rgba(255,255,255,0.6);font-size:11px" id="upd"></span>
@@ -410,7 +422,30 @@ async function init(){
     console.error(e);
   }
 }
-init();
+
+const SENHA_PAINEL = "Qualidade#2026";
+
+function checkPw(){
+  const val = document.getElementById('pw').value;
+  if(val === SENHA_PAINEL){
+    sessionStorage.setItem('painel_auth','ok');
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    document.getElementById('pw-err').style.display='block';
+  }
+}
+
+function checkGate(){
+  if(sessionStorage.getItem('painel_auth')==='ok'){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  }
+}
+checkGate();
 </script>
+</div>
 </body>
 </html>
