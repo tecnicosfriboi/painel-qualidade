@@ -338,29 +338,104 @@ function rCham(){
   const ks=Object.keys(rows[0]||{});
   const cd=ks.find(k=>k.toLowerCase().includes('data')&&k.toLowerCase().includes('aber'))||ks.find(k=>k.toLowerCase().includes('data'))||'';
   const fil=cd?fD(rows,cd):rows;
-  const ct=ks.find(k=>['tipo','type','categoria','assunto'].includes(k.toLowerCase()))||ks[2]||'';
-  const tipos={};
-  fil.forEach(r=>{const t=r[ct]||'Outros';tipos[t]=(tipos[t]||0)+1;});
-  const ts=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const CORES=['#2a78d6','#1baf7a','#eda100','#2E3192','#4a3aa7','#e34948','#e87ba4','#eb6834'];
+
+  const cProblema=ks.find(k=>k.toLowerCase()==='problema')||ks.find(k=>k.toLowerCase().includes('finalidade'))||'Problema';
+  const cStatus=ks.find(k=>k.toLowerCase()==='status')||'Status';
+  const cTipoAt=ks.find(k=>k.toLowerCase().includes('tipo')&&k.toLowerCase().includes('atend'))||'Tipo de atendimento';
+  const cAnalista=ks.find(k=>k.toLowerCase().includes('analista'))||'Analista';
+
+  // Chamados x Status
+  const porStatus={};
+  fil.forEach(r=>{const t=r[cStatus]||'—';porStatus[t]=(porStatus[t]||0)+1;});
+  const stEntries=Object.entries(porStatus).sort((a,b)=>b[1]-a[1]);
+
+  // Chamados x Tipo de Atendimento
+  const porTipoAt={};
+  fil.forEach(r=>{const t=r[cTipoAt]||'—';porTipoAt[t]=(porTipoAt[t]||0)+1;});
+  const taEntries=Object.entries(porTipoAt).sort((a,b)=>b[1]-a[1]);
+
+  // Chamados por Finalidade (Problema)
+  const porProb={};
+  fil.forEach(r=>{const t=r[cProblema]||'Outros';porProb[t]=(porProb[t]||0)+1;});
+  const probEntries=Object.entries(porProb).sort((a,b)=>b[1]-a[1]);
+
+  // Matriz Analista x Finalidade
+  const finalidades=probEntries.map(([f])=>f);
+  const porAnalista={};
+  fil.forEach(r=>{
+    const a=r[cAnalista]||'—';
+    const f=r[cProblema]||'Outros';
+    if(!porAnalista[a])porAnalista[a]={};
+    porAnalista[a][f]=(porAnalista[a][f]||0)+1;
+  });
+  const analistas=Object.keys(porAnalista).map(a=>{
+    const total=finalidades.reduce((s,f)=>s+(porAnalista[a][f]||0),0);
+    return {nome:a,dados:porAnalista[a],total};
+  }).sort((a,b)=>b.total-a.total);
+
+  const CORES_STATUS=['#F7941D','#1C75BC','#4a3aa7','#2E3192','#e34948'];
+  const CORES_TIPO=['#2E3192','#C1272D','#8fbf5f','#1C75BC'];
+  const CORES_PROB=['#2E3192','#1C75BC','#4a7fc9','#7ba0d8','#a9c2e6','#c1272d','#e88f8f'];
 
   document.getElementById('main').innerHTML=`
     <div class="kg">
       ${k('Total de chamados',fm(fil.length))}
-      ${k('Tipos distintos',fm(Object.keys(tipos).length))}
+      ${k('Analistas envolvidos',fm(analistas.length))}
     </div>
-    <div class="cc"><div class="ct">Chamados por tipo</div>
-      <div style="position:relative;height:${Math.max(200,ts.length*38+70)}px">
-        <canvas id="cc1"></canvas>
+    <div class="cg">
+      <div class="cc"><div class="ct">Chamados × Status</div>
+        <div style="position:relative;height:220px"><canvas id="chStatus"></canvas></div>
+      </div>
+      <div class="cc"><div class="ct">Nº de Chamados × Tipo de Atendimento</div>
+        <div style="position:relative;height:220px"><canvas id="chTipo"></canvas></div>
+      </div>
+    </div>
+    <div class="cc" style="margin-bottom:10px"><div class="ct">Chamados por Finalidade</div>
+      <div style="position:relative;height:${Math.max(180,probEntries.length*32+50)}px"><canvas id="chProb"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ct">Chamados por analista — detalhado por finalidade</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">
+          <thead>
+            <tr style="border-bottom:1.5px solid var(--border)">
+              <th style="text-align:left;padding:6px 8px;color:var(--text-secondary);font-weight:500;position:sticky;left:0;background:var(--surface-2)">Analista</th>
+              ${finalidades.map(f=>`<th style="text-align:center;padding:6px 6px;color:var(--text-secondary);font-weight:500;white-space:nowrap">${f}</th>`).join('')}
+              <th style="text-align:center;padding:6px 8px;color:#fff;font-weight:600;background:#2E3192;border-radius:4px 4px 0 0">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analistas.map((a,i)=>`<tr style="border-bottom:0.5px solid var(--border);${i%2===1?'background:rgba(0,0,0,0.015)':''}">
+              <td style="padding:6px 8px;font-weight:500;color:var(--text-primary);position:sticky;left:0;background:${i%2===1?'var(--surface-1)':'var(--surface-2)'}">${a.nome}</td>
+              ${finalidades.map(f=>`<td style="text-align:center;padding:6px 6px;color:var(--text-secondary)">${a.dados[f]||'—'}</td>`).join('')}
+              <td style="text-align:center;padding:6px 8px;font-weight:600;color:#2E3192;background:rgba(46,49,146,0.06)">${a.total}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
       </div>
     </div>`;
 
-  setTimeout(()=>{dc('cc1');const c=document.getElementById('cc1');
-    if(c&&ts.length)CH['cc1']=new Chart(c,{type:'bar',
-      data:{labels:ts.map(([t])=>t.length>25?t.slice(0,23)+'…':t),
-        datasets:[{label:'Qtd',data:ts.map(([,v])=>v),backgroundColor:ts.map((_,i)=>CORES[i%CORES.length]),borderRadius:4}]},
+  setTimeout(()=>{
+    dc('chStatus');const c1=document.getElementById('chStatus');
+    if(c1&&stEntries.length)CH.chStatus=new Chart(c1,{type:'doughnut',
+      data:{labels:stEntries.map(([t])=>t),datasets:[{data:stEntries.map(([,v])=>v),backgroundColor:CORES_STATUS,borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}},
+          tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' ('+fm(c.raw/fil.length*100,0)+'%)'}}}}});
+
+    dc('chTipo');const c2=document.getElementById('chTipo');
+    if(c2&&taEntries.length)CH.chTipo=new Chart(c2,{type:'doughnut',
+      data:{labels:taEntries.map(([t])=>t),datasets:[{data:taEntries.map(([,v])=>v),backgroundColor:CORES_TIPO,borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}},
+          tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' ('+fm(c.raw/fil.length*100,0)+'%)'}}}}});
+
+    dc('chProb');const c3=document.getElementById('chProb');
+    if(c3&&probEntries.length)CH.chProb=new Chart(c3,{type:'bar',
+      data:{labels:probEntries.map(([t])=>t),
+        datasets:[{label:'Qtd',data:probEntries.map(([,v])=>v),backgroundColor:probEntries.map((_,i)=>CORES_PROB[i%CORES_PROB.length]),borderRadius:4}]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' chamados'}}},
         scales:{x:{grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:12}}}}}});
   },100);
 }
